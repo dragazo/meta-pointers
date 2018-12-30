@@ -77,6 +77,26 @@ public: // -- pointer data -- //
 	constexpr T *operator->() const noexcept { return get(); }
 	constexpr T &operator[](std::ptrdiff_t index) const { get()[index]; }
 
+	// increments the pointer value (preserves meta data)
+	constexpr meta_ptr &operator++() noexcept { reset(get() + 1); return *this; }
+	constexpr meta_ptr operator++(int) noexcept { meta_ptr cpy(*this); ++*this; return cpy; }
+
+	// decrements the pointer value (preserves meta data)
+	constexpr meta_ptr &operator--() noexcept { reset(get() - 1); return *this; }
+	constexpr meta_ptr operator--(int) noexcept { meta_ptr cpy(*this); --*this; return cpy; }
+
+	// adds to the pointer value (preserves meta data)
+	constexpr meta_ptr &operator+=(std::ptrdiff_t off) { reset(get() + off); return *this; }
+	// subtracts from the pointer value (preserves meta data)
+	constexpr meta_ptr &operator-=(std::ptrdiff_t off) { reset(get() - off); return *this; }
+
+	// adds to the pointer value (preserves meta data)
+	friend constexpr meta_ptr operator+(meta_ptr p, std::ptrdiff_t off) { p += off; return p; }
+	friend constexpr meta_ptr operator+(std::ptrdiff_t off, meta_ptr p) { p += off; return p; }
+
+	// subtracts from the pointer value (preserves meta data)
+	friend constexpr meta_ptr operator-(meta_ptr p, std::ptrdiff_t off) { p -= off; return p; }
+
 public: // -- meta data -- //
 
 	// the number of available meta data bits
@@ -153,6 +173,13 @@ public: // -- comparison -- //
 	constexpr friend bool operator==(meta_ptr a, meta_ptr b) { return a.raw == b.raw; }
 	// returns true iff the meta ptrs point to different objects OR have different meta data
 	constexpr friend bool operator!=(meta_ptr a, meta_ptr b) { return a.raw != b.raw; }
+
+	// returns true iff the meta ptr and the raw pointer point to the same object
+	constexpr friend bool operator==(meta_ptr m, T *r) { return m.get() == r; }
+	constexpr friend bool operator==(T *r, meta_ptr m) { return m.get() == r; }
+	// returns true iff the meta ptr and the raw pointer point to different objects
+	constexpr friend bool operator!=(meta_ptr m, T *r) { return m.get() != r; }
+	constexpr friend bool operator!=(T *r, meta_ptr m) { return m.get() != r; }
 };
 
 #endif

@@ -139,6 +139,51 @@ int main()
 	mb.flip();
 	assert(mb.get() == c && mb.read() == 2);
 
+	assert(mb == c);
+
+	assert(mb++.get() == c);
+	assert(mb.get() == c + 1);
+	assert(mb == c + 1);
+
+	assert(mb--.get() == c + 1);
+	assert(mb.get() == c);
+	assert(mb == c);
+
+	assert((++mb).get() == c + 1);
+	assert(mb.get() == c + 1);
+	assert(mb == c + 1);
+
+	assert((--mb).get() == c);
+	assert(mb.get() == c);
+	assert(mb == c);
+
+	assert((mb += 10) == c + 10);
+	assert(mb == c + 10);
+
+	assert((mb -= 20) == c - 10);
+	assert(mb == c - 10);
+
+	assert((mb += 10) == c);
+	assert(mb == c);
+
+	assert(mb + 10 == c + 10); assert(mb == c);
+	assert(10 + mb == c + 10); assert(mb == c);
+	assert(10 + mb - 10 == c); assert(mb == c);
+	assert(mb - 10 == c - 10); assert(mb == c);
+
+	assert(mb + -10 == c - 10); assert(mb == c);
+	assert(-10 + mb + 10 == c); assert(mb == c);
+	assert(mb - -10 == c + 10); assert(mb == c);
+
+	ma = a;
+	std::cerr << a << ' ' << ma << '\n';
+
+	const char *str = "hello";
+	meta_ptr<const char> mcstr = str;
+	meta_ptr<char> mstr = const_cast<char*>(str);
+
+	std::cerr << str << ' ' << mcstr << ' ' << mstr << '\n';
+
 	std::cerr << "\n\ntests completed\n";
 
 	std::cin.get();
