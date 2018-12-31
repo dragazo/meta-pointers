@@ -2,6 +2,10 @@
 #include <string>
 #include <vector>
 #include <cassert>
+#include <set>
+#include <map>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "meta_ptr.h"
 
@@ -24,8 +28,11 @@ int main()
 	align_check<std::vector<int>>();
 	align_check<std::vector<std::string>>();
 
-	int _a, _b, _c, _d;
-	int *a = &_a, *b = &_b, *c = &_c, *d = &_d;
+	int __raw_ints[4];
+	int *a = __raw_ints + 0;
+	int *b = __raw_ints + 1;
+	int *c = __raw_ints + 2;
+	int *d = __raw_ints + 3;
 
 	meta_ptr<int> ma, mb;
 	meta_ptr<int> mc(c);
@@ -183,6 +190,51 @@ int main()
 	meta_ptr<char> mstr = const_cast<char*>(str);
 
 	std::cerr << str << ' ' << mcstr << ' ' << mstr << '\n';
+
+	std::unordered_set<meta_ptr<int>> uset;
+	uset.insert(ma);
+	uset.insert(mb);
+	uset.erase(ma);
+
+	std::set<meta_ptr<int>> set;
+	set.insert(ma);
+	set.insert(mb);
+	set.erase(ma);
+
+	ma.reset_clear();
+	mb.reset_clear();
+	assert(ma.get() == nullptr && ma.read() == 0);
+	assert(mb.get() == nullptr && mb.read() == 0);
+
+	ma.reset(a, 1);
+	mb.reset(a, 2);
+	assert(ma.get() == a && ma.read() == 1);
+	assert(mb.get() == a && mb.read() == 2);
+
+	assert(ma < mb && ma <= mb);
+	assert(mb > ma && mb >= ma);
+	assert(ma != mb && !(ma == mb));
+
+	ma.flip();
+	assert(ma == mb);
+
+	int *less_neg_p = (int*)-8; // negative aligned pointers
+	int *great_neg_p = (int*)-4;
+
+	ma.reset_clear(less_neg_p);
+	mb.reset_clear(great_neg_p);
+
+	assert(ma == less_neg_p && less_neg_p == ma);
+	assert(mb == great_neg_p && great_neg_p == mb);
+
+	// not sure if negative pointers are even a thing
+	// just make sure they behave the same as raw pointers
+	assert((less_neg_p == great_neg_p) == (ma == mb));
+	assert((less_neg_p != great_neg_p) == (ma != mb));
+	assert((less_neg_p < great_neg_p) == (ma < mb));
+	assert((less_neg_p <= great_neg_p) == (ma <= mb));
+	assert((less_neg_p > great_neg_p) == (ma > mb));
+	assert((less_neg_p >= great_neg_p) == (ma >= mb));
 
 	std::cerr << "\n\ntests completed\n";
 

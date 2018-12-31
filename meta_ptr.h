@@ -6,6 +6,7 @@
 #include <exception>
 #include <stdexcept>
 #include <type_traits>
+#include <functional>
 
 // represents a pointer to T with additional meta data stored in the least-significant bits.
 // specifically, n bits are available for meta data where n = log2(alignof(T)).
@@ -16,6 +17,8 @@ class meta_ptr
 private: // -- data -- //
 
 	std::uintptr_t raw; // the raw value containing the pointer and meta data
+
+	friend struct std::hash<meta_ptr>;
 
 private: // -- helpers -- //
 
@@ -60,6 +63,17 @@ public: // -- pointer data -- //
 			throw std::invalid_argument("ptr was not aligned");
 
 		raw = (std::uintptr_t)ptr | (raw & (alignof(T) - 1));
+	}
+
+	// sets the stored pointer and meta data.
+	// throws std::invalid_argument if ptr is not properly aligned for type T.
+	// if an exception is thrown, no change is made.
+	constexpr void reset(T *ptr, std::size_t meta)
+	{
+		if ((std::uintptr_t)ptr & (alignof(T) - 1))
+			throw std::invalid_argument("ptr was not aligned");
+
+		raw = (std::uintptr_t)ptr | (meta & (alignof(T) - 1));
 	}
 
 	// sets the stored pointer and clears meta data to zero.
@@ -169,17 +183,34 @@ public: // -- fine-tuned meta data -- //
 
 public: // -- comparison -- //
 
-	// returns true iff the meta ptrs point to the same object AND have identical meta data
+	// compares two meta ptrs by first comparing the pointer value, then the meta data.
 	constexpr friend bool operator==(meta_ptr a, meta_ptr b) { return a.raw == b.raw; }
-	// returns true iff the meta ptrs point to different objects OR have different meta data
 	constexpr friend bool operator!=(meta_ptr a, meta_ptr b) { return a.raw != b.raw; }
+	constexpr friend bool operator<(meta_ptr a, meta_ptr b) { return a.raw < b.raw; }
+	constexpr friend bool operator<=(meta_ptr a, meta_ptr b) { return a.raw <= b.raw; }
+	constexpr friend bool operator>(meta_ptr a, meta_ptr b) { return a.raw > b.raw; }
+	constexpr friend bool operator>=(meta_ptr a, meta_ptr b) { return a.raw >= b.raw; }
 
-	// returns true iff the meta ptr and the raw pointer point to the same object
-	constexpr friend bool operator==(meta_ptr m, T *r) { return m.get() == r; }
-	constexpr friend bool operator==(T *r, meta_ptr m) { return m.get() == r; }
-	// returns true iff the meta ptr and the raw pointer point to different objects
-	constexpr friend bool operator!=(meta_ptr m, T *r) { return m.get() != r; }
-	constexpr friend bool operator!=(T *r, meta_ptr m) { return m.get() != r; }
+	// compares a meta ptr's pointer value to a raw pointer (the meta data is ignored).
+	constexpr friend bool operator==(meta_ptr a, T *b) { return a.get() == b; }
+	constexpr friend bool operator!=(meta_ptr a, T *b) { return a.get() != b; }
+	constexpr friend bool operator<(meta_ptr a, T *b) { return a.get() < b; }
+	constexpr friend bool operator<=(meta_ptr a, T *b) { return a.get() <= b; }
+	constexpr friend bool operator>(meta_ptr a, T *b) { return a.get() > b; }
+	constexpr friend bool operator>=(meta_ptr a, T *b) { return a.get() >= b; }
+
+	constexpr friend bool operator==(T *a, meta_ptr b) { return a == b.get(); }
+	constexpr friend bool operator!=(T *a, meta_ptr b) { return a != b.get(); }
+	constexpr friend bool operator<(T *a, meta_ptr b) { return a < b.get(); }
+	constexpr friend bool operator<=(T *a, meta_ptr b) { return a <= b.get(); }
+	constexpr friend bool operator>(T *a, meta_ptr b) { return a > b.get(); }
+	constexpr friend bool operator>=(T *a, meta_ptr b) { return a >= b.get(); }
+};
+
+template<typename T>
+struct std::hash<meta_ptr<T>>
+{
+	std::size_t operator()(meta_ptr<T> val) const { return std::hash<std::uintptr_t>()(val.raw); }
 };
 
 #endif
